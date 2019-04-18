@@ -55,8 +55,18 @@ def welcome():
         f"/api/v1.0/yyyy-mm-dd/yyyy-mm-dd/<br/>"
     )
 
-
-
+@app.route('/api/v1.0/precipitation')
+def precipitation():
+   rain_info = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= "2016-8-23").order_by(Measurement.date).all()
+    
+   precip_data = []
+   for date, precip in rain_info:
+        precip_dict = {}
+        precip_dict["date"] = date
+        precip_dict["prcp"] = precip
+        precip_data.append(precip_dict)
+        
+   return jsonify(precip_data)
 
 # @app.route("/api/v1.0/passengers")
 # def passengers():
