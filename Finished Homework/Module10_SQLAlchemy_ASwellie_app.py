@@ -57,7 +57,18 @@ def welcome():
 
 @app.route('/api/v1.0/precipitation')
 def precipitation():
-   rain_info = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= "2016-8-23").order_by(Measurement.date).all()
+   most_recent = session.query(Measurement).order_by(Measurement.date.desc()).limit(1)
+    
+   for day in most_recent:
+        most_recent_date = day.date
+
+   most_recent_date = dt.datetime.strptime(most_recent_date, "%Y-%m-%d")  
+
+  
+   one_year_date = most_recent_date - dt.timedelta(days=366)
+
+    
+   rain_info = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= one_year_date).order_by(Measurement.date).all()
     
    precip_data = []
    for date, precip in rain_info:
@@ -84,6 +95,41 @@ def precipitation():
 #         all_passengers.append(passenger_dict)
 
 #     return jsonify(all_passengers)
+
+@app.route('/api/v1.0/<date>/')
+def one_date(date):
+    
+    result = session.query(Measurement.date, func.avg(Measurement.tobs), func.max(Measurement.tobs), func.min(Measurement.tobs)).\
+        filter(Measurement.date == date).all()
+
+
+    one_date_list = []
+    for date in result:
+        output = {}
+        output['Date'] = date[0]
+        output['Average Temperature'] = date[1]
+        output['Highest Temperature'] = date[2]
+        output['Lowest Temperature'] = date[3]
+        one_date_list.append(output)
+
+    return jsonify(one_date_list)
+
+@app.route('/api/v1.0/<start_date>/<end_date>/')
+def date_range(start_date, end_date):
+    
+    result = session.query(func.avg(Measurement.tobs), func.max(Measurement.tobs), func.min(Measurement.tobs)).\
+        filter(Measurement.date >= start_date, Measurement.date <= end_date).all()
+
+    range_date_list = []
+    for date in result:
+        output = {}
+        output["Start Date"] = start_date
+        output["End Date"] = end_date
+        output["Average Temperature"] = date[0]
+        output["Highest Temperature"] = date[1]
+        output["Lowest Temperature"] = date[2]
+        range_date_list.append(output)
+    return jsonify(range_date_list)
 
 
 if __name__ == '__main__':
