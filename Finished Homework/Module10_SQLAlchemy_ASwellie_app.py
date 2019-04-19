@@ -56,7 +56,7 @@ def welcome():
     )
 
 @app.route('/api/v1.0/precipitation')
-def precipitation():
+def precipitation_page():
    most_recent = session.query(Measurement).order_by(Measurement.date.desc()).limit(1)
     
    for day in most_recent:
@@ -79,25 +79,33 @@ def precipitation():
         
    return jsonify(precip_data)
 
-# @app.route("/api/v1.0/passengers")
-# def passengers():
-#     """Return a list of passenger data including the name, age, and sex of each passenger"""
-#     # Query all passengers
-#     results = session.query(Passenger.name, Passenger.age, Passenger.sex).all()
+@app.route('/api/v1.0/stations')
+def station_page():
+    station_list = session.query(Measurement.station).distinct()
 
-#     # Create a dictionary from the row data and append to a list of all_passengers
-#     all_passengers = []
-#     for name, age, sex in results:
-#         passenger_dict = {}
-#         passenger_dict["name"] = name
-#         passenger_dict["age"] = age
-#         passenger_dict["sex"] = sex
-#         all_passengers.append(passenger_dict)
+    return jsonify([station[0] for station in station_list])
 
-#     return jsonify(all_passengers)
+
+@app.route('/api/v1.0/tobs')
+def tobs_page():
+    most_recent = session.query(Measurement).order_by(Measurement.date.desc()).limit(1)
+    
+    for day in most_recent:
+        most_recent_date = day.date
+
+    most_recent_date = dt.datetime.strptime(most_recent_date, "%Y-%m-%d")
+
+    one_year_date = most_recent_date - dt.timedelta(days=366)
+
+    tobs_data = session.query(Measurement.date, Measurement.tobs).\
+        filter(Measurement.date >= one_year_date).\
+        order_by(Measurement.date).all()
+    
+
+    return jsonify(tobs_data)
 
 @app.route('/api/v1.0/<date>/')
-def one_date(date):
+def one_date_page(date):
     
     result = session.query(Measurement.date, func.avg(Measurement.tobs), func.max(Measurement.tobs), func.min(Measurement.tobs)).\
         filter(Measurement.date == date).all()
@@ -115,7 +123,7 @@ def one_date(date):
     return jsonify(one_date_list)
 
 @app.route('/api/v1.0/<start_date>/<end_date>/')
-def date_range(start_date, end_date):
+def date_range_page(start_date, end_date):
     
     result = session.query(func.avg(Measurement.tobs), func.max(Measurement.tobs), func.min(Measurement.tobs)).\
         filter(Measurement.date >= start_date, Measurement.date <= end_date).all()
